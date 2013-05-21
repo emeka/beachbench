@@ -2,6 +2,7 @@ package org.beachbench;
 
 import org.beachbench.exception.ExceptionUtils;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +13,6 @@ class Benchmark {
     private final List<TestCase> testCases = new LinkedList<TestCase>();
     private final String id = randomUUID().toString();
     private String name = "";
-    private final Map<String, Object> settings = new HashMap<String, Object>();
 
     public void add(TestCase testCase) {
         testCases.add(testCase);
@@ -42,8 +42,8 @@ class Benchmark {
                 throw ExceptionUtils.wrap(e);
             }
 
-            //Map<String, Object> settings = testCase.getSettings();
-            //populateDriver(settings, driver);
+            Map<String, Object> settings = testCase.getSettings();
+            populateDriver(settings, driver);
 
             if (testCase.getWarmupRunIterationCount() > 0) {
                 System.out.println(String.format("BeachBench > Starting warmup with a total of %s iterations", testCase.getWarmupRunIterationCount()));
@@ -167,16 +167,20 @@ class Benchmark {
         return testCases;
     }
 
-    /*    private void populateDriver(Map<String, Object> settings, BenchmarkDriver driver) {
-        for (def entry in settings.entrySet()){
-            def property = entry.key
-            def value = entry.value
+    private void populateDriver(Map<String, Object> settings, BenchmarkDriver driver) {
+        for (Map.Entry<String, Object> entry : settings.entrySet()) {
+            String property = entry.getKey();
+            Object value = entry.getValue();
             try {
-                Field field = driver.class.getDeclaredField(property)
-                field.setAccessible true
-                field.set(driver, value)
+                Field field = driver.getClass().getDeclaredField(property);
+                field.setAccessible(true);
+                try {
+                    field.set(driver, value);
+                } catch (Throwable e) {
+                    throw ExceptionUtils.wrap(e);
+                }
             } catch (NoSuchFieldException ignore) {
             }
         }
-    }*/
+    }
 }
